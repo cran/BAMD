@@ -1,5 +1,5 @@
-\name{gs}
-\alias{gs}
+\name{gibbsSampler}
+\alias{gibbsSampler}
 \title{ Estimate posterior parameters in Bayesian Association Model }
 \description{
 This function fits the following linear mixed model 
@@ -14,9 +14,10 @@ The model is fit by embedding it in a Bayesian framework and estimating the
 posterior parameters using a Gibbs sampler.
 }
 \usage{
-gs(fname, fprob, n, p, s, a = 2.01, b = 0.99099, c = 2.01, d = 0.99099, 
+gibbsSampler(fname, fprob, n, p, s, a = 2.01, b = 0.99099, c = 2.01, d = 0.99099, 
 	beta.in = 1, gamma.in = 1, sig2.in = 1, phi2.in = 1, alpha = 0.05, 
-	nsim = 1000, keep = 100, param = 1)
+	nsim = 1000, keep = 100, codaOut="CodaChain.txt", 
+	codaIndex="CodaIndex.txt")
 }
 \arguments{
   \item{fname}{ \code{fname} should be the name of a \code{.csv} file. This file should
@@ -49,8 +50,8 @@ to carry out. }
   \item{keep}{ \code{keep} specifies which values from the Gibbs sampler chain to keep 
 and use when computing the mean and confidence intervals. This allows user to allow 
 for burn-in. }
-  \item{param}{ \code{param} denotes the parametrization of the genotypes. It currently 
-cannot be changed from 1. }
+  \item{codaOut}{ File to store Gibbs sample parameters in coda format}
+  \item{codaIndex}{ File to store description of sampled and stored values. }
 }
 \details{
   For further details on the prior distributions used, please refer to the User Guide 
@@ -61,10 +62,9 @@ cannot be changed from 1. }
   will print debugging statements to show the user which iteration of the Gibbs sampler it is 
   currently at. This would allow the user to detect if something is going wrong with the routine. 
 
-  The valued sampled from the full conditionals will be stored in the following \code{.csv} files:
-  \code{beta.csv, gamma.csv, sig2.csv, phi2.csv} and \code{Imputed_missing_vals}. The \code{.csv}  
-  files can be used to check that the chain has converged, while the imputed missing values for 
-  the Z-matrix will be used by the variable selector routine.
+  The values sampled from the full conditionals will be stored in 
+  the files \code{CodaChain.txt} and \code{Imputed_missing_vals} 
+  by default. 
 }
 \references{ 
   Gopal, V. "BAMD User Manual"
@@ -76,7 +76,7 @@ Vik Gopal \email{viknesh@stat.ufl.edu}
 Maintainer: Vik Gopal <viknesh@stat.ufl.edu>
 }
 \seealso{
- \code{\link{vs}}
+ \code{\link{variableSelector}}
 }
 \examples{
 # Load example matrices and write to csv files.
@@ -85,9 +85,10 @@ write.csv(cbind(Y,X,Z,R), file="generatedData.csv", quote=FALSE, row.names=FALSE
 write.csv(Zprob, file="Zprob.csv", quote=FALSE, row.names=FALSE)
 	
 # Run the gibbs sampler with 100 iterations, keeping the last 800
-gs(fname="generatedData.csv", fprob="Zprob.csv", n=8, p=3, s=5, nsim=1000, keep=800)
+gibbsSampler(fname="generatedData.csv", fprob="Zprob.csv", n=8, p=3, s=5, nsim=1000, keep=800)
 
 #remove all generated csv files
+unlink("*.txt")
 unlink("*.csv")
 }
 \keyword{ models }

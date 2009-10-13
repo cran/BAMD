@@ -1,7 +1,7 @@
-vs <-
-function(fname, n, p, s, nsim, keep=5, prop=0.75, betafile="beta.csv", 
-	gammafile="gamma.csv", phi2file="phi2.csv", 
-	sig2file="sig2.csv", missingfile="Imputed_missing_vals")  {
+variableSelector <-
+function(fname, n, p, s, nsim, keep=5, prop=0.75, 
+	codaOut="CodaChain.txt", codaIndex="CodaIndex.txt",
+	missingfile="Imputed_missing_vals", SNPsubset)  {
 
 ################################################################
 # Function to update the table of models                       #
@@ -69,8 +69,8 @@ computeBF <- function(delta) {
 
 	Z_L <- Z[,pos_L]
 	Z_delta <- Z[, pos_delta]
-	tmp <- t(Z_L) %*% Z_L
-	sqrt.det.Z_L <- sqrt(det(tmp))
+	tmp <- (harmonic.mean.phi2)*diag(s_L) + t(Z_L) %*% Z_L
+	sqrt.det.R <- sqrt(det(tmp))
 	P_L <- Z_L %*% solve(tmp) %*% t(Z_L)
 
 	rm(tmp, Z_L)
@@ -78,7 +78,7 @@ computeBF <- function(delta) {
 	BF <- vector("numeric", length=nsim.gs)
 	sum.delta <- sum(delta)
 
-	mean(.C("computeLoop", as.double(Y), as.double(X), as.double(Z_delta), as.double(P_L), as.double(BF), as.double(sqrt.det.Z_L), as.double(beta), as.double(gamma), as.double(phi2), as.double(sig2), as.integer(n), as.integer(p), as.integer(s), as.integer(s_delta), as.integer(pos_delta), as.integer(s_L), as.integer(pos_L), as.integer(nsim.gs), as.integer(sum.delta), PACKAGE="BAMD")[[5]])
+	mean(.C("computeLoop", as.double(Y), as.double(X), as.double(Z_delta), as.double(P_L), as.double(BF), as.double(sqrt.det.R), as.double(beta), as.double(gamma), as.double(phi2), as.double(sig2), as.integer(n), as.integer(p), as.integer(s), as.integer(s_delta), as.integer(pos_delta), as.integer(s_L), as.integer(pos_L), as.integer(nsim.gs), as.integer(sum.delta), PACKAGE="BAMD")[[5]])
 }
 ################################################################
 
@@ -113,21 +113,33 @@ rm(DATA)
 missing.index <- which(Z==0, arr.ind=TRUE)
 num.missing <- dim(missing.index)[1]
 
-# read in simulated beta, gamma, phi2, sig2
-beta <- t(as.matrix(read.csv(betafile, header=T, sep=",")))
-gamma <- t(as.matrix(read.csv(gammafile, header=T, sep=",")))
-phi2 <- as.vector(as.matrix(read.csv(phi2file, header=T, sep=",")))
-sig2 <- as.vector(as.matrix(read.csv(sig2file, header=T, sep=",")))
+# Extract number of simulations kept from the Gibbs run
+#nsim.gs <- length(sig2)
+zz <- file(codaIndex, "r")
+firstLine <- readLines(con=zz, n=1)
+nsim.gs <- as.integer(strsplit(firstLine, " ")[[1]][3])
+close(zz)
 
-# Extract number of simulations kept
-nsim.gs <- length(sig2)
+# read in simulated beta, gamma, phi2, sig2
+allSimulatedValues <- read.table(codaOut, header=FALSE)
+beta <- matrix(allSimulatedValues[1:(p*nsim.gs),2], nrow=p, byrow=TRUE)
+gamma <- matrix(allSimulatedValues[(p*nsim.gs+1):((p+s)*nsim.gs),2], 
+		nrow=s, byrow=TRUE)
+phi2 <- allSimulatedValues[((p+s)*nsim.gs+1): ((p+s+1)*nsim.gs),2]
+sig2 <- allSimulatedValues[((p+s+1)*nsim.gs+1): ((p+s+2)*nsim.gs),2]
+# if only a subset of SNPS is to be used
+if (!missing(SNPsubset)) {
+  gamma <- subset(gamma, subset=as.logical(SNPsubset))
+  s <- sum(SNPsubset)
+}
+rm(allSimulatedValues)
 
 # Reparametrize to [-1 0 1]
 Z[Z==1] <- -1
 Z[Z==2] <-  0
 Z[Z==3] <-  1
 
-# Compute inverse sqrt of R matrix
+# Compute inverse sqrt of R matrix (this is the covariance R)
 D <- diag(eigen(R)$values)
 P <- eigen(R)$vect
 sqrt.R <- P %*% sqrt(D) %*% t(P)
@@ -154,6 +166,11 @@ if (num.missing>0) {
   # Find "Average" Z
   Z[missing.index] <- ave.missing
 }
+if (!missing(SNPsubset)) {
+  Z <- subset(Z, select=which(SNPsubset==1))
+}
+
+harmonic.mean.phi2 <- 1/mean(1/phi2)
 
 # Compute Ystar, Xstar and Zstar
 Y <- sqrt.R.inv %*% Y

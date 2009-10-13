@@ -3,7 +3,7 @@
 #include<math.h>
 #include<R_ext/BLAS.h>
 
-void computeLoop (double *Y, double *X, double *Z_delta, double *P_L, double *BF, double *sqrt_det_Z_L,
+void computeLoop (double *Y, double *X, double *Z_delta, double *P_L, double *BF, double *sqrt_det_R,
 		double *beta, double *gamma, double *phi2, double *sig2, 
 		int *n, int *p, int *s, int *s_delta, int *pos_delta, int *s_L, int *pos_L, 
 		int *nsim_gs, int *sum_delta) {
@@ -17,12 +17,13 @@ void computeLoop (double *Y, double *X, double *Z_delta, double *P_L, double *BF
 	gamma_delta = (double *) calloc(*s_delta, sizeof(double));
 	gamma_L = (double *) calloc(*s_L, sizeof(double));
 
+        /* Loops through the simulated values from the Gibbs sampler to compute the estimated 
+           Bayes Factor */
 	for(i=0; i<*nsim_gs; i++) {
+                /* extract the gamma parameters for the right simulation iteration */
 		for(j=0;j<*s_delta;j++) gamma_delta[j] = *(gamma + (*s)*i + pos_delta[j] - 1);
 		for(j=0;j<*s_L;j++) gamma_L[j] = *(gamma + (*s) * i + pos_L[j] - 1);
 
-		/* Remember NOT to use fractions for the second argument of pow(,), and remember 
-		   to link with -lm when compiling */
 		f1 = R_pow(phi2[i], 0.5 * (*s_L));
 
 		F77_CALL(dcopy)(n, Y, &inc, tmp1, &inc);
@@ -45,10 +46,7 @@ void computeLoop (double *Y, double *X, double *Z_delta, double *P_L, double *BF
 		f4 = F77_CALL(ddot)(n, tmp2, &inc, tmp1, &inc);
 		f2 = exp((double) -0.5 * (f4/sig2[i]));
 
-		f4 = F77_CALL(ddot)(s_L, gamma_L, &inc, gamma_L, &inc);
-		f3 = (double) exp((double) -0.5 * f4/(sig2[i] * phi2[i]) );
-
-		BF[i] = (f1 * (*sqrt_det_Z_L) * f2)/f3;
+		BF[i] = f1 * (*sqrt_det_R) * f2;
 	}
 	
 

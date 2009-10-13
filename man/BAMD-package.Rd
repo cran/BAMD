@@ -23,14 +23,14 @@ Date: \tab 2009-04-20\cr
 License: \tab GPL-2\cr
 LazyLoad: \tab yes\cr
 }
-There are two functions in this package. The first, \code{gs}, will fit and 
+There are two functions in this package. The first, \code{gibbsSampler}, will fit and 
 estimate the posterior parameters in the model above. This will allow the 
 experimenter to pick out which covariates were significantly non-zero, since 
 the routine will return \eqn{(1-\alpha)100\%} confidence intervals. The imputed 
 missing values at each iteration of the Gibbs sampler will be stored in a file for 
 use by the second function.
 
-The second function, \code{vs}, is a variable selector that will pick out the ``best''
+The second function, \code{variableSelector}, is a variable selector that will pick out the ``best''
 model, as measured by the Bayes Factor, using a stochastic search algorithm.
 }
 \author{
@@ -44,5 +44,5 @@ Maintainer: Vik Gopal <viknesh@stat.ufl.edu>
 }
 \keyword{ package }
 \seealso{
- \code{\link{gs}}, \code{\link{vs}}
+ \code{\link{gibbsSampler}}, \code{\link{variableSelector}}
 }

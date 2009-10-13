@@ -1,2 +1,2 @@
 useDynLib(BAMD)
-export(gs, vs)
+export(gibbsSampler, variableSelector)

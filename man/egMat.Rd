@@ -5,7 +5,7 @@
 \alias{R}
 \alias{Zprob}
 \docType{data}
-\title{ Example matrices for input to gs() and vs()}
+\title{ Example matrices for input to gibbsSampler() and variableSelector()}
 \description{
   These are example datasets that demonstrate the format of input 
   to the routines in BAMD.
