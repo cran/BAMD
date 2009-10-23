@@ -5,8 +5,8 @@
 
 void gibbs_sampler(double *Y, double *X, double *Z, double *R, double *Zprob, int *missing_index, 
 		int *num_missing, int *nsim, int *n, int *p, int *s, double *a, double *b, double *c, 
-		double *d, double *beta_s, double *gamma_s, double *sig2_s, double *phi2_s, int *paramet, 
-		int *keep, int *SNPprior)
+		double *d, double *beta_s, double *gamma_s, double *sig2_s, double *phi2_s, int *keep, 
+		int *SNPprior)
 {  
 /* Variables that will be kept and re-used again and again */
   double *Xt_Rinv_X_inv, *Xt_Rinv_X_inv_Xt_Rinv, *Y_Xbeta, *Rinv, **exact_missing;
@@ -16,7 +16,7 @@ void gibbs_sampler(double *Y, double *X, double *Z, double *R, double *Zprob, in
 
 /* Disposable variables */
   double *tmp_XtRX, *tmp_XtRinv, alpha=1.0, beta=0.0;
-  int i, j=0, k=0, SNPcol, loc_n, loc_p, loc_s, num_miss, parametrization;
+  int i, j=0, k=0, SNPcol, loc_n, loc_p, loc_s, num_miss;
   int loc_SNPprior;
   int *ipiv, info;
   char notrans='n', trans='t';
@@ -24,7 +24,6 @@ void gibbs_sampler(double *Y, double *X, double *Z, double *R, double *Zprob, in
   loc_n = *n;
   loc_p = *p;
   loc_s = *s;
-  parametrization = *paramet;
 
   num_miss = *num_missing;
   loc_SNPprior = *SNPprior;
@@ -66,10 +65,7 @@ void gibbs_sampler(double *Y, double *X, double *Z, double *R, double *Zprob, in
   for(i=0;i<num_miss;i++) {
     *(row_missing + i) = *(missing_index+i);
     *(col_missing + i) = *(missing_index+i+num_miss);
-    if(parametrization==1) 
-      *(exact_missing + i) = Z + *(row_missing + i) + (*(col_missing + i) * loc_n) ;
-    else 
-      *(exact_missing + i) = Z + *(row_missing + i) + (*(col_missing + i) * 2 * loc_n) ;
+    *(exact_missing + i) = Z + *(row_missing + i) + (*(col_missing + i) * loc_n) ;
   }
 
   /* SET-UP OF (t(X) %*% Rinv %*% X)inv */
@@ -120,7 +116,7 @@ void gibbs_sampler(double *Y, double *X, double *Z, double *R, double *Zprob, in
 /* update one missing value at a time; one SNP col at a time */
   generate_SNP (beta_s+i*loc_p, gamma_s+i*loc_s, X, Y, Z, loc_n, loc_p, loc_s, 
 	*(sig2_s+i), j, exact_missing, row_missing, col_missing, num_miss, 
-	Zprob, R, parametrization, loc_SNPprior);
+	Zprob, R, loc_SNPprior);
   if(i>(*nsim - *keep)) {
 			  fprintf(fmissing, "%.1f ", **(exact_missing + j));
   }
@@ -135,7 +131,7 @@ void gibbs_sampler(double *Y, double *X, double *Z, double *R, double *Zprob, in
   else if(num_miss==1) {
   generate_SNP (beta_s+i*loc_p, gamma_s+i*loc_s, X, Y, Z, loc_n, loc_p, loc_s, 
 	*(sig2_s+i), j, exact_missing, row_missing, col_missing, num_miss, 
-	Zprob, R, parametrization, loc_SNPprior);
+	Zprob, R, loc_SNPprior);
   if(i>(*nsim - *keep)) {
 		  fprintf(fmissing, "%.1f ", **(exact_missing + j));
 	  fprintf(fmissing, "\n");

@@ -3,6 +3,9 @@ function(fname, fprob, n, p, s, a=2.01, b=0.99099, c=2.01, d=0.99099,
 		beta.in=1, gamma.in=1, sig2.in=1, phi2.in=1, alpha=0.05,
 		nsim=1000, keep=100, codaOut="CodaChain.txt", 
 		codaIndex="CodaIndex.txt") {
+if (nsim==keep) {
+  nsim <- nsim + 1
+}
 DATA <- read.csv(fname, header=T)
 Y <- as.matrix(DATA[,1])
 X <- as.matrix(DATA[,2:(p+1)])
@@ -99,12 +102,11 @@ else
 
 #dyn.load("gibbs.so")
 
-param <- 1
 cat("Loading compiled code..\n")
 tmp <- .C("gibbs_sampler",  as.double(Y), as.double(X), as.double(Z), as.double(R), as.double(PROB.sub),
 as.integer(missing.index), as.integer(num.missing), as.integer(nsim), as.integer(n), as.integer(p), 
 as.integer(s), as.double(a), as.double(b), as.double(c), as.double(d), as.double(beta_s), 
-as.double(gamma_s), as.double(sig2_s), as.double(phi2_s), as.integer(param), as.integer(keep),
+as.double(gamma_s), as.double(sig2_s), as.double(phi2_s), as.integer(keep),
 as.integer(SNPprior), PACKAGE="BAMD")
 #dyn.unload("gibbs.so")
 cat("Computations by compiled code finished!\n")

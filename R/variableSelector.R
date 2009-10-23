@@ -70,7 +70,10 @@ computeBF <- function(delta) {
 	Z_L <- Z[,pos_L]
 	Z_delta <- Z[, pos_delta]
 	tmp <- (harmonic.mean.phi2)*diag(s_L) + t(Z_L) %*% Z_L
-	sqrt.det.R <- sqrt(det(tmp))
+	sqrt.det.R <- prod(sqrt(eigen(tmp, only.values=TRUE)$values))
+	if(sqrt.det.R==Inf) {
+          stop("Too many SNPs maybe.. g(.) function could not be computed.")
+        }
 	P_L <- Z_L %*% solve(tmp) %*% t(Z_L)
 
 	rm(tmp, Z_L)
@@ -178,6 +181,7 @@ X <- sqrt.R.inv %*% X
 Z <- sqrt.R.inv %*% Z
 
 cur.table <- init.table(keep, s)
+cat("Model table initialized..\n")
 
 cur.delta <- rep(1, s) 
 cur.delta[sample(s, size=1)] <- 0

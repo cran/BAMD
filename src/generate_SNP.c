@@ -7,7 +7,7 @@
 void generate_SNP (double *beta, double *gamma, double *X, double *Y, double *Z, 
 		int n, int p, int s, double sig2, int missing_index, double **exact_missing,
  		int *row_missing, int *col_missing, int num_missing, double *Zprob, 
-		double *R, int parametrization, int SNPprior)
+		double *R, int SNPprior)
 {
   double *Z1, tmp_Y_Xbeta, num[3], p1[3], prior[3], working;
   int inc=1, i, three=3, inc2=n;
@@ -27,7 +27,6 @@ void generate_SNP (double *beta, double *gamma, double *X, double *Y, double *Z,
   if(SNPprior==1) {
     F77_CALL(dcopy)(&three, Zprob + i, &num_missing, prior, &inc);
 
-    if(parametrization==1) {
       *(Z1+col_missing[i])=ALL1;
       num[0]= prior[0] * exp(R_pow(tmp_Y_Xbeta - F77_CALL(ddot)(&s, Z1, &inc, gamma, &inc), 2.0)/ (-2 * sig2));
 
@@ -36,20 +35,6 @@ void generate_SNP (double *beta, double *gamma, double *X, double *Y, double *Z,
 
       *(Z1+col_missing[i])=ALL3;
       num[2]= prior[2] * exp(R_pow(tmp_Y_Xbeta - F77_CALL(ddot)(&s, Z1, &inc, gamma, &inc), 2.0)/ (-2 * sig2));
-    }
-    else {
-      *(Z1 + col_missing[i]*2)=ALL1a;
-      *(Z1 + col_missing[i]*2 + 1)=ALL1b;
-      num[0]= prior[0] * exp(R_pow(tmp_Y_Xbeta - F77_CALL(ddot)(&s, Z1, &inc, gamma, &inc), 2.0)/ (-2 * sig2));
-
-      *(Z1 + col_missing[i]*2)=ALL2a;
-      *(Z1 + col_missing[i]*2 + 1)=ALL2b;
-      num[1]= prior[1] * exp(R_pow(tmp_Y_Xbeta - F77_CALL(ddot)(&s, Z1, &inc, gamma, &inc), 2.0)/ (-2 * sig2));
-
-      *(Z1 + col_missing[i]*2)=ALL3a;
-      *(Z1 + col_missing[i]*2 + 1)=ALL3b;
-      num[2]= prior[2] * exp(R_pow(tmp_Y_Xbeta - F77_CALL(ddot)(&s, Z1, &inc, gamma, &inc), 2.0)/ (-2 * sig2));
-    }
   }
 
   /*If noninformative priors used, FBLAS */
@@ -57,7 +42,6 @@ void generate_SNP (double *beta, double *gamma, double *X, double *Y, double *Z,
     F77_CALL(dcopy)(&s, Z+row_missing[i], &n, Z1, &inc);
     tmp_Y_Xbeta = *(Y + row_missing[i]) - F77_CALL(ddot)(&p, X + row_missing[i], &n, beta, &inc);
 
-    if(parametrization==1) {
       *(Z1+col_missing[i])=ALL1;
       num[0]= exp(R_pow(tmp_Y_Xbeta - F77_CALL(ddot)(&s, Z1, &inc, gamma, &inc), 2.0)/ (-2 * sig2));
 
@@ -66,20 +50,6 @@ void generate_SNP (double *beta, double *gamma, double *X, double *Y, double *Z,
 
       *(Z1+col_missing[i])=ALL3;
       num[2]= exp(R_pow(tmp_Y_Xbeta - F77_CALL(ddot)(&s, Z1, &inc, gamma, &inc), 2.0)/ (-2 * sig2));
-    }
-    else {
-      *(Z1 + col_missing[i]*2)=ALL1a;
-      *(Z1 + col_missing[i]*2 + 1)=ALL1b;
-      num[0]= exp(R_pow(tmp_Y_Xbeta - F77_CALL(ddot)(&s, Z1, &inc, gamma, &inc), 2.0)/ (-2 * sig2));
-
-      *(Z1 + col_missing[i]*2)=ALL2a;
-      *(Z1 + col_missing[i]*2 + 1)=ALL2b;
-      num[1]= exp(R_pow(tmp_Y_Xbeta - F77_CALL(ddot)(&s, Z1, &inc, gamma, &inc), 2.0)/ (-2 * sig2));
-
-      *(Z1 + col_missing[i]*2)=ALL3a;
-      *(Z1 + col_missing[i]*2 + 1)=ALL3b;
-      num[2]= exp(R_pow(tmp_Y_Xbeta - F77_CALL(ddot)(&s, Z1, &inc, gamma, &inc), 2.0)/ (-2 * sig2));
-    }
   }
 
    working=num[0]+num[1]+num[2];
@@ -90,29 +60,12 @@ void generate_SNP (double *beta, double *gamma, double *X, double *Y, double *Z,
   working = unif_rand();
   PutRNGstate();
 
-  if(parametrization==1) {
    if(working<=p1[0])
 	**(exact_missing+i) = ALL1;
    else if (working<=(p1[0]+p1[1]))
 	**(exact_missing+i) = ALL2;
    else 
 	**(exact_missing+i) = ALL3;
-   }
-  else{
-   if(working<=p1[0]) {
-	**(exact_missing+i) = ALL1a;
-	*(*(exact_missing+i) + n) = ALL1b;
-   }
-   else if (working<=(p1[0]+p1[1])) {
-	**(exact_missing+i) = ALL2a;
-	*(*(exact_missing+i) + n) = ALL2b;
-   }
-   else {
-	**(exact_missing+i) = ALL3a;
-	*(*(exact_missing+i) + n) = ALL3b;
-   }
-   }
-  
   
   free(Z1);
 }
