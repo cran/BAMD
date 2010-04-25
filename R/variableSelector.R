@@ -41,16 +41,22 @@ update.table <- function(cur.table, delta, BF) {
 # Function to initialise table of models                       #
 ################################################################
 init.table <- function(keep, s) {
+  cat("Initializing table with models..\n")
   cur.table <- matrix(0, nrow=keep, ncol=(s+1))
-  while (length(unique(cur.table[,s+1]))<keep) {
-  for (i in 1:keep ) {
+  i <- 1
+  numUnique <- 0
+  while (numUnique < keep) {
     tmp <- round(runif(s))
     while((sum(tmp)==s)||(sum(tmp)==0)) {
-        tmp <- round(runif(s))
-    }
+      tmp <- round(runif(s))
+      }
     cur.table[i, 1:s] <- tmp
     cur.table[i,s+1] <- computeBF(cur.table[i, 1:s])
-  }
+    if(length(unique(cur.table[1:i,s+1]))==i) {
+      i <- i+1
+      numUnique <- numUnique + 1
+      cat("Found Model", i - 1, "\n", sep=" ")
+    }
   }
   cur.table
 }
