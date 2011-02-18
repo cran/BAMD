@@ -1,0 +1,4 @@
+Version 3.4 
+- adds a new function to compute the posterior distribution of the 
+  sampled SNPs. It is called imputedGenotypes
+- 

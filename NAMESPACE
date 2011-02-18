@@ -1,2 +1,2 @@
 useDynLib(BAMD)
-export(gibbsSampler, variableSelector)
+export(gibbsSampler, variableSelector, imputedGenotypes)
