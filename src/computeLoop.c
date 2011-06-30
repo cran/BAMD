@@ -28,7 +28,7 @@ void computeLoop (double *Y, double *X, double *Z_delta, double *P_L, double *BF
 		f1 = R_pow(phi2[i], 0.5 * (*s_L));
 		if (f1 == 0.0) {
 			f1 = DBL_MIN;
-			printf("Warning: f1 reset to DBL_MIN\n");
+			//printf("Warning: f1 reset to DBL_MIN\n");
  		}
 
 		F77_CALL(dcopy)(n, Y, &inc, tmp1, &inc);
@@ -52,13 +52,13 @@ void computeLoop (double *Y, double *X, double *Z_delta, double *P_L, double *BF
 		f2 = exp((double) -0.5 * (f4/sig2[i]));
 		if (f2 == 0.0) {
 			f2 = DBL_MIN;
-			printf("Warning: f2 reset to DBL_MIN\n");
+			//printf("Warning: f2 reset to DBL_MIN\n");
  		}
 
 		BF[i] = f1 * (*sqrt_det_R) * f2;
 		if (BF[i] == 0.0) {
 			BF[i] = DBL_MIN;
-			printf("Warning: BF[i] reset to DBL_MIN\n");
+			//printf("Warning: BF[i] reset to DBL_MIN\n");
  		}
 	}
 	

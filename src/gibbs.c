@@ -118,7 +118,7 @@ void gibbs_sampler(double *Y, double *X, double *Z, double *R, double *Zprob, in
 	*(sig2_s+i), j, exact_missing, row_missing, col_missing, num_miss, 
 	Zprob, R, loc_SNPprior);
   if(i>(*nsim - *keep)) {
-			  fprintf(fmissing, "%.1f ", **(exact_missing + j));
+	  fprintf(fmissing, "%.1f ", **(exact_missing + j));
   }
   j = (++j)%num_miss;
   }

@@ -1,7 +1,19 @@
-variableSelector <-
+variableSelectorBatchP <- 
 function(fname, n, p, s, nsim, keep=5, prop=0.75, 
 	codaOut="CodaChain.txt", codaIndex="CodaIndex.txt",
-	missingfile="Imputed_missing_vals", SNPsubset)  {
+	missingfile="Imputed_missing_vals", SNPsubset, 
+        prefix, pathToLog, outfile="out1.rdt")  {
+
+################# Set up log-files ###############################
+  myRank <- mpi.comm.rank(0)
+  commSize <- mpi.comm.size(0)
+  numSlaves <- commSize - 1
+  
+  output.fname <- paste(pathToLog, prefix, sprintf("%02d",myRank), ".log", 
+                        sep="")
+  output.con <- file(output.fname, open="wt")
+  cat("Log file set up. \n", file=output.con)
+################# Log-files set up ###############################
 
 ################################################################
 # Function to update the table of models                       #
@@ -35,13 +47,11 @@ update.table <- function(cur.table, delta, BF) {
 }
 ################################################################
 
-
-
 ################################################################
 # Function to initialise table of models                       #
 ################################################################
 init.table <- function(keep, s) {
-  cat("Initializing table with models..\n")
+  cat("Initializing table with models..\n", file=output.con)
   cur.table <- matrix(0, nrow=keep, ncol=(s+1))
   i <- 1
   numUnique <- 0
@@ -55,13 +65,12 @@ init.table <- function(keep, s) {
     if(length(unique(cur.table[1:i,s+1]))==i) {
       i <- i+1
       numUnique <- numUnique + 1
-      cat("Found Model", i - 1, "\n", sep=" ")
+      cat("Found Model", i - 1, "\n", sep=" ", file=output.con)
     }
   }
   cur.table
 }
 ################################################################
-
 
 ################################################################
 # Function to compute estimated Bayes Factor                   #
@@ -78,7 +87,8 @@ computeBF <- function(delta) {
 	tmp <- (harmonic.mean.phi2)*diag(s_L) + t(Z_L) %*% Z_L
 	sqrt.det.R <- prod(sqrt(eigen(tmp, only.values=TRUE)$values))
 	if(sqrt.det.R==Inf) {
-          stop("Too many SNPs maybe.. g(.) function could not be computed.")
+          cat("Too many SNPs maybe.. g(.) function could not be computed.",
+              file=output.con)
         }
 	P_L <- Z_L %*% solve(tmp) %*% t(Z_L)
 
@@ -137,7 +147,7 @@ gamma <- matrix(allSimulatedValues[(p*nsim.gs+1):((p+s)*nsim.gs),2],
 phi2 <- allSimulatedValues[((p+s)*nsim.gs+1): ((p+s+1)*nsim.gs),2]
 sig2 <- allSimulatedValues[((p+s+1)*nsim.gs+1): ((p+s+2)*nsim.gs),2]
 # if only a subset of SNPS is to be used
-if (!missing(SNPsubset)) { 
+if (!missing(SNPsubset)) {
   gamma <- subset(gamma, subset=as.logical(SNPsubset))
   s <- sum(SNPsubset)
 }
@@ -175,7 +185,7 @@ if (num.missing>0) {
   # Find "Average" Z
   Z[missing.index] <- ave.missing
 }
-if (!missing(SNPsubset)) { 
+if (!missing(SNPsubset)) {
   Z <- subset(Z, select=which(SNPsubset==1))
 }
 
@@ -187,7 +197,7 @@ X <- sqrt.R.inv %*% X
 Z <- sqrt.R.inv %*% Z
 
 cur.table <- init.table(keep, s)
-cat("Model table initialized..\n")
+cat("Model table initialized..\n", file=output.con)
 
 cur.delta <- rep(1, s) 
 cur.delta[sample(s, size=1)] <- 0
@@ -207,10 +217,32 @@ for (i in 1:nsim) {
 		cur.BF <- cand.BF
                 cur.table <- update.table(cur.table, cur.delta, cur.BF)
 	}
-	cat("Iteration ", i, " completed.\n")
+	cat("Iteration ", i, " completed.\n", file=output.con)
 }
 
-cur.table[order(cur.table[,s+1], decreasing=TRUE),]
+ cur.table <- cur.table[order(cur.table[,s+1], decreasing=TRUE),]
 
+# begin passing tourMatrix to master
+  if(myRank > 0) {
+    cat("Transferring table to master .. ", sep=" ", file=output.con)
+    mpi.send.Robj(cur.table, dest=0, tag=2, comm=0)
+    cat("Done.\n", file=output.con)
+  }
+  if(myRank == 0) {
+    recvdFrom <- 0
+     for(i in 1:numSlaves) {
+      tmp <- mpi.recv.Robj(source=mpi.any.source(), tag=2, comm=0)
+      cat("Receiving table from", mpi.get.sourcetag(0)[1], ".. ", 
+          sep=" ", file=output.con)
+      cur.table <- rbind(cur.table, tmp)
+      cat("Done.\n", file=output.con)
+    }
+    cur.table <- unique(cur.table)
+    cur.table <- cur.table[order(cur.table[,s+1], decreasing=TRUE),]
+    cur.table <- cur.table[1:keep,]
+    
+    save(cur.table, file=outfile)
+  }
+  
+  close(output.con)
 }
-
